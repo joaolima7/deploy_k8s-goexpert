@@ -1,0 +1,42 @@
+# Pegar a imagem base do Golang
+FROM golang:latest as builder
+
+# Definir o diretório de trabalho dentro do container
+WORKDIR /app
+
+# Copiar os arquivos para o diretório de trabalho
+COPY . .
+
+# Buildar a aplicação Go com a variável de ambiente GOOS definida como linux
+# Isso é necessário para garantir que o binário seja compatível com o ambiente Linux do container
+# O -o server especifica o nome do binário de saída (server)
+# O -ldflags="-w -s" é usado para reduzir o tamanho do binário final
+# Isso remove informações de depuração e símbolos desnecessários
+# A flag CGO_ENABLED=0 é usada para desabilitar o uso de Cgo, garantindo que o binário seja totalmente estático
+RUN GOOS=linux CGO_ENABLED=0 go build -ldflags="-w -s" -o server .
+
+# Criar uma imagem final a partir do scratch
+# O scratch é uma imagem vazia, ideal para aplicações Go que não dependem de bibliotecas externas
+# Isso resulta em uma imagem muito leve, contendo apenas o binário compilado
+FROM scratch
+
+# Copiar o binário compilado do estágio builder para a imagem final
+COPY --from=builder /app/server .
+
+# Comando para executar o servidor
+# Isso inicia o binário compilado quando o container é iniciado
+CMD [ "./server" ]
+
+
+# Comando para buildar a imagem Docker
+# docker build -t remonato/goapp:latest -f Dockerfile.prod .
+
+# Comando para ver imagens Docker
+# docker images
+
+# Comando para rodar o container
+# docker run -p 8080:8080 remonato/goapp:latest
+
+# Comando para subir imagem para o Docker Hub
+# docker push remonato/goapp:latest
+
